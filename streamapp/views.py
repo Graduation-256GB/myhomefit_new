@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http.response import StreamingHttpResponse
-from streamapp.camera import VideoCamera, IPWebCam, MaskDetect, LiveWebCam
+from streamapp.camera import VideoCamera, IPWebCam, MaskDetect, LiveWebCam, PoseWebCam
 # Create your views here.
 
 
@@ -31,4 +31,9 @@ def mask_feed(request):
 					
 def livecam_feed(request):
 	return StreamingHttpResponse(gen(LiveWebCam()),
+					content_type='multipart/x-mixed-replace; boundary=frame')
+
+
+def pose_feed(request):
+	return StreamingHttpResponse(gen(PoseWebCam()),
 					content_type='multipart/x-mixed-replace; boundary=frame')
