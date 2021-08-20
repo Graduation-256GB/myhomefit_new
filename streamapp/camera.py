@@ -52,21 +52,49 @@ class PoseWebCam(object):
         self.mpDraw = mp.solutions.mediapipe.python.solutions.drawing_utils
         self.pTime = 0
 
+        self.frame_cnt=0
+        self.allkeypoints=[]
+        self.outputkeypoints=[]
+
     def __del__(self):
         cv2.destroyAllWindows()
 
     def get_frame(self):
+        
+
         success, img = self.cap.read()
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         results = self.pose.process(imgRGB)
+        # print(results.pose_landmarks.landmark[0])
+
+        keypoints=[] # 1프레임의 keypoints를 담은 배열
+        # keypoints.add([results.pose_landmarks.landmark[0]])
 
         if results.pose_landmarks:
+            self.frame_cnt+=1
+
             self.mpDraw.draw_landmarks(img, results.pose_landmarks, self.mpPose.POSE_CONNECTIONS)
             for id, lm in enumerate(results.pose_landmarks.landmark):
                 h, w,c = img.shape
                 
                 cx, cy = int(lm.x*w), int(lm.y*h)
                 cv2.circle(img, (cx, cy), 5, (255,0,0), cv2.FILLED)
+
+                keypoints.append((cx, cy))  # 1프레임에 33개의 keypoints값 차례로 넣어줌.
+
+            # if self.frame_cnt < 17 : # 나머지 이용 
+            self.allkeypoints.append(keypoints) # 프레임별 keypoints가 모두 있는 배열
+            
+            if len(self.allkeypoints)==16: # 배열의 길이는 항상 16개를 유지 
+                self.outputkeypoints=[self.allkeypoints]  # 단지, 3차원 배열로 만들어주기 위함(이전까지는 2차원 배열)
+                self.get_keypoints() # 프레임 수가 16개가 되면, 16개의 프레임에 대한 keypoints가 모여있는 배열 반환해주는 함수
+                self.allkeypoints=[] # 배열 초기화  
+           
+            # 제대로 만들었는지 확인하기 위한 print문 (cmd창 참고)
+            print(self.frame_cnt)
+            print(len(self.allkeypoints))
+            # print(len(self.allkeypoints[0]))
+            print(self.allkeypoints)   
 
         cTime = time.time()
         fps = 1/(cTime-self.pTime)
@@ -78,6 +106,14 @@ class PoseWebCam(object):
         frame_flip = cv2.flip(img,1)
         ret, jpeg = cv2.imencode('.jpg', frame_flip)
         return jpeg.tobytes()
+
+
+    # 16개의 프레임에서 keypoints를 모두 모아서 반환해주는 함수 (3차원 배열 형태)
+    def get_keypoints(self):
+        print("get_keypoints 호출!")
+        print(self.outputkeypoints)
+        return self.outputkeypoints
+
 
 
 class IPWebCam(object):
